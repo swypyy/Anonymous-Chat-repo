@@ -1,103 +1,398 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full bg-slate-950 text-slate-100">
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ephemeral Chat</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Ephemeral — Disappearing Transient Messenger</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Socket.IO Client Library -->
   <script src="/socket.io/socket.io.js"></script>
+
   <style>
-    body { font-family: sans-serif; padding: 15px; margin: 0; background: #121212; color: #fff; }
-    .hidden { display: none; }
-    input, button { padding: 10px; margin: 5px 0; width: 100%; box-sizing: border-box; }
-    #chat-box { height: 60vh; overflow-y: auto; border: 1px solid #333; padding: 10px; margin-bottom: 10px; }
-    .msg { margin-bottom: 8px; }
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    /* Custom scrollbar for clean message container */
+    #chat-box::-webkit-scrollbar {
+      width: 6px;
+    }
+    #chat-box::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+    }
+    #chat-box::-webkit-scrollbar-thumb {
+      background: rgba(51, 65, 85, 0.5);
+      border-radius: 9999px;
+    }
+    #chat-box::-webkit-scrollbar-thumb:hover {
+      background: rgba(71, 85, 105, 0.8);
+    }
+
+    /* Subtle Glassmorphism Card Effect */
+    .glass-panel {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .glass-input {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(51, 65, 85, 0.8);
+      transition: all 0.2s ease-in-out;
+    }
+
+    .glass-input:focus {
+      border-color: rgba(99, 102, 241, 0.8);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    }
+
+    /* Custom Toast Animation */
+    @keyframes toastFade {
+      0% { opacity: 0; transform: translateY(-10px); }
+      15% { opacity: 1; transform: translateY(0); }
+      85% { opacity: 1; transform: translateY(0); }
+      100% { opacity: 0; transform: translateY(-10px); }
+    }
+    .toast-anim {
+      animation: toastFade 3s ease forwards;
+    }
   </style>
 </head>
-<body>
+<body class="h-full flex flex-col justify-between overflow-x-hidden antialiased">
 
-  <!-- JOIN / CREATE SCREEN -->
-  <div id="setup-screen">
-    <h2>Disappearing Rooms</h2>
-    <input id="username" placeholder="Your Nickname" />
-    <button onclick="createRoom()">Create New Room</button>
-    <hr />
-    <input id="room-code-input" placeholder="Enter 6-digit Code" />
-    <button onclick="joinRoom()">Join Room</button>
-  </div>
+  <!-- TOP HEADER BAR -->
+  <header class="w-full glass-panel border-b border-slate-800/80 sticky top-0 z-30 px-4 py-3 sm:px-8">
+    <div class="max-w-5xl mx-auto flex items-center justify-between">
+      <!-- App Brand & Title -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+          <i class="fa-solid me-0 fa-bolt text-white text-lg"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-bold text-lg text-slate-100 tracking-tight">Ephemeral</h1>
+            <span class="text-[10px] font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-0.5 rounded-full uppercase tracking-wider">Zero Log</span>
+          </div>
+          <p class="text-xs text-slate-400 font-normal">Transient • No Database • Pure RAM</p>
+        </div>
+      </div>
 
-  <!-- CHAT ROOM SCREEN -->
-  <div id="chat-screen" class="hidden">
-    <h3 id="room-header"></h3>
-    <div id="chat-box"></div>
-    <input id="message-input" placeholder="Type a message..." />
-    <button onclick="sendMessage()">Send</button>
-  </div>
+      <!-- Header Status Badge / Actions -->
+      <div id="header-status-badge" class="flex items-center gap-2">
+        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          Ready
+        </span>
+      </div>
+    </div>
+  </header>
 
+  <!-- MAIN CONTENT CONTAINER -->
+  <main class="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 flex flex-col justify-center">
+
+    <!-- 1. SETUP / JOIN SCREEN -->
+    <section id="setup-screen" class="w-full max-w-md mx-auto transition-all duration-300">
+      <div class="glass-panel rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+        
+        <!-- Glowing background accent -->
+        <div class="absolute -top-16 -right-16 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none"></div>
+        <div class="absolute -bottom-16 -left-16 w-32 h-32 bg-violet-500/10 rounded-full blur-2xl pointer-events-none"></div>
+
+        <div class="text-center mb-6">
+          <h2 class="text-xl font-semibold text-slate-100">Start or Join a Session</h2>
+          <p class="text-xs text-slate-400 mt-1">Chat room automatically destroys when host disconnects.</p>
+        </div>
+
+        <form onsubmit="return false;" class="space-y-4">
+          <!-- Nickname Input -->
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1.5" for="username">Your Display Name</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                <i class="fa-regular fa-user text-sm"></i>
+              </span>
+              <input id="username" type="text" maxlength="20" placeholder="e.g. Alex" 
+                class="glass-input w-full pl-10 pr-4 py-2.5 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none" />
+            </div>
+          </div>
+
+          <!-- Create Room Button -->
+          <button type="button" onclick="createRoom()" 
+            class="w-full bg-indigo-600 hover:bg-indigo-500 active:scale-[0.99] text-white font-medium py-2.5 px-4 rounded-xl text-sm transition-all duration-150 shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2">
+            <i class="fa-solid fa-plus text-xs"></i>
+            <span>Create New Room</span>
+          </button>
+
+          <!-- Divider -->
+          <div class="relative my-6">
+            <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-slate-800"></div></div>
+            <div class="relative flex justify-center text-xs uppercase"><span class="bg-slate-900 px-3 text-slate-500 font-medium">Or join with code</span></div>
+          </div>
+
+          <!-- Room Code Input -->
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1.5" for="room-code-input">6-Digit Room Code</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                <i class="fa-solid fa-key text-sm"></i>
+              </span>
+              <input id="room-code-input" type="text" maxlength="6" placeholder="X7K2P9" 
+                class="glass-input w-full pl-10 pr-4 py-2.5 rounded-xl text-sm text-slate-100 placeholder-slate-500 font-mono tracking-widest uppercase focus:outline-none" />
+            </div>
+          </div>
+
+          <!-- Join Room Button -->
+          <button type="button" onclick="joinRoom()" 
+            class="w-full bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/60 active:scale-[0.99] text-slate-200 font-medium py-2.5 px-4 rounded-xl text-sm transition-all duration-150 flex items-center justify-center gap-2">
+            <i class="fa-solid fa-arrow-right-to-bracket text-xs"></i>
+            <span>Join Room</span>
+          </button>
+        </form>
+
+      </div>
+    </section>
+
+    <!-- 2. ACTIVE CHAT ROOM SCREEN (Hidden by default) -->
+    <section id="chat-screen" class="hidden w-full flex-1 flex flex-col h-[78vh] sm:h-[82vh]">
+      <div class="glass-panel flex-1 flex flex-col rounded-2xl border border-slate-800 overflow-hidden shadow-2xl">
+        
+        <!-- Room Control Header -->
+        <div class="px-5 py-3.5 bg-slate-900/80 border-b border-slate-800 flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="bg-slate-800 border border-slate-700/80 px-3 py-1 rounded-lg flex items-center gap-2">
+              <span class="text-xs text-slate-400 font-medium">CODE:</span>
+              <span id="room-code-display" class="font-mono text-sm font-bold text-indigo-400 tracking-wider">------</span>
+              <button onclick="copyRoomCode()" title="Copy Room Code" class="ml-1 text-slate-400 hover:text-white transition-colors">
+                <i class="fa-regular fa-copy text-xs"></i>
+              </button>
+            </div>
+            
+            <div id="role-badge" class="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-md text-[11px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">
+              Host
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button onclick="leaveRoom()" 
+              class="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 active:scale-95 text-xs font-medium px-3.5 py-1.5 rounded-lg transition-all duration-150 flex items-center gap-1.5">
+              <i class="fa-solid fa-right-from-bracket"></i>
+              <span class="hidden sm:inline">Leave Room</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Chat Messages Container -->
+        <div id="chat-box" class="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 bg-slate-950/40">
+          <!-- Messages dynamically appended here -->
+        </div>
+
+        <!-- Message Input Footer -->
+        <div class="p-3 sm:p-4 bg-slate-900/90 border-t border-slate-800">
+          <form onsubmit="event.preventDefault(); sendMessage();" class="flex items-center gap-2">
+            <input id="message-input" type="text" autocomplete="off" placeholder="Type an encrypted message..." 
+              class="glass-input flex-1 px-4 py-2.5 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none" />
+            
+            <button type="submit" 
+              class="bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-medium p-2.5 sm:px-4 sm:py-2.5 rounded-xl text-sm transition-all duration-150 shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2">
+              <i class="fa-solid fa-paper-plane text-sm"></i>
+              <span class="hidden sm:inline">Send</span>
+            </button>
+          </form>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- TOAST NOTIFICATIONS CONTAINER -->
+  <div id="toast-container" class="fixed top-20 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- SCRIPT LOGIC -->
   <script>
     const socket = io();
     let currentUser = '';
+    let currentRoomCode = '';
 
+    // --- DOM Elements ---
+    const setupScreen = document.getElementById('setup-screen');
+    const chatScreen = document.getElementById('chat-screen');
+    const chatBox = document.getElementById('chat-box');
+    const roomCodeDisplay = document.getElementById('room-code-display');
+    const messageInput = document.getElementById('message-input');
+    const roleBadge = document.getElementById('role-badge');
+    const headerStatusBadge = document.getElementById('header-status-badge');
+
+    // --- User Actions ---
     function createRoom() {
-      currentUser = document.getElementById('username').value || 'Host';
+      const nameInput = document.getElementById('username').value.trim();
+      currentUser = nameInput || 'Host';
       socket.emit('create-room', { username: currentUser });
     }
 
     function joinRoom() {
-      const usernameInput = document.getElementById('username').value;
+      const nameInput = document.getElementById('username').value.trim();
       const codeInput = document.getElementById('room-code-input').value.toUpperCase().trim();
 
       if (!codeInput) {
-        alert('Please enter a room code');
+        showToast('Please enter a 6-digit room code', 'error');
         return;
       }
 
-      currentUser = usernameInput || 'Guest';
-      
-      // Switch the screen immediately when clicking join
-      showChat(`Room Code: ${codeInput}`);
-      
-      // Send join request to server
+      currentUser = nameInput || 'Guest';
+      currentRoomCode = codeInput;
+
+      // Switch screen view immediately
+      showChatScreen(codeInput, false);
+
+      // Socket payload request
       socket.emit('join-room', { code: codeInput, username: currentUser });
     }
 
     function sendMessage() {
-      const input = document.getElementById('message-input');
-      if (!input.value) return;
-      socket.emit('send-message', { text: input.value, sender: currentUser });
-      input.value = '';
+      const text = messageInput.value.trim();
+      if (!text) return;
+
+      socket.emit('send-message', { text: text, sender: currentUser });
+      messageInput.value = '';
+      messageInput.focus();
     }
 
-    // Server Listeners
+    function leaveRoom() {
+      if (confirm('Are you sure you want to leave this chat room?')) {
+        location.reload();
+      }
+    }
+
+    function copyRoomCode() {
+      if (!currentRoomCode) return;
+      
+      // Fallback reliable clipboard execution for embedded mobile browsers
+      const tempInput = document.createElement('input');
+      tempInput.value = currentRoomCode;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      document.execCommand('copy');
+      document.body.removeChild(tempInput);
+
+      showToast('Room code copied to clipboard!', 'success');
+    }
+
+    // --- Socket.IO Event Listeners ---
     socket.on('room-created', ({ code }) => {
-      showChat(`Room Code: ${code} (Share this)`);
+      currentRoomCode = code;
+      showChatScreen(code, true);
+      appendSystemMessage(`Room created! Code is ${code}. Share it with others to start chatting.`);
     });
 
     socket.on('user-joined', ({ username }) => {
-      appendMsg('System', `${username} entered the room.`);
+      appendSystemMessage(`${username} joined the chat session.`);
     });
 
     socket.on('new-message', ({ text, sender }) => {
-      appendMsg(sender, text);
+      appendChatMessage(sender, text);
     });
 
     socket.on('room-destroyed', (reason) => {
-      alert(reason);
+      alert(reason || 'The room host left. This session is now destroyed.');
       location.reload();
     });
 
-    socket.on('error-msg', (msg) => alert(msg));
+    socket.on('error-msg', (msg) => {
+      showToast(msg, 'error');
+      // If error occurs while attempting to join, revert to setup
+      setTimeout(() => location.reload(), 1500);
+    });
 
-    function showChat(headerText) {
-      document.getElementById('setup-screen').classList.add('hidden');
-      document.getElementById('chat-screen').classList.remove('hidden');
-      document.getElementById('room-header').innerText = headerText;
+    // --- UI Render Helpers ---
+    function showChatScreen(code, isHost) {
+      currentRoomCode = code;
+      roomCodeDisplay.innerText = code;
+      
+      setupScreen.classList.add('hidden');
+      chatScreen.classList.remove('hidden');
+
+      if (isHost) {
+        roleBadge.innerText = 'Host';
+        roleBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-md text-[11px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20';
+      } else {
+        roleBadge.innerText = 'Guest';
+        roleBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-md text-[11px] font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20';
+      }
+
+      // Update Header Badge Status
+      headerStatusBadge.innerHTML = `
+        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+          <span class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></span>
+          Live Session
+        </span>
+      `;
     }
 
-    function appendMsg(sender, text) {
-      const box = document.getElementById('chat-box');
-      box.innerHTML += `<div class="msg"><strong>${sender}:</strong> ${text}</div>`;
-      box.scrollTop = box.scrollHeight;
+    function appendChatMessage(sender, text) {
+      const isMe = sender === currentUser;
+      const msgWrapper = document.createElement('div');
+      msgWrapper.className = `flex flex-col ${isMe ? 'items-end' : 'items-start'} my-2`;
+
+      const senderLabel = isMe ? '' : `<span class="text-[11px] font-medium text-indigo-400 mb-1 ml-1">${escapeHTML(sender)}</span>`;
+      
+      const bubbleClasses = isMe
+        ? 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-2xl rounded-tr-xs px-4 py-2.5 shadow-md max-w-[85%] sm:max-w-[70%] text-sm break-words'
+        : 'bg-slate-800/90 border border-slate-700/80 text-slate-100 rounded-2xl rounded-tl-xs px-4 py-2.5 shadow-md max-w-[85%] sm:max-w-[70%] text-sm break-words';
+
+      msgWrapper.innerHTML = `
+        ${senderLabel}
+        <div class="${bubbleClasses}">
+          ${escapeHTML(text)}
+        </div>
+      `;
+
+      chatBox.appendChild(msgWrapper);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function appendSystemMessage(text) {
+      const msgWrapper = document.createElement('div');
+      msgWrapper.className = 'flex justify-center my-3';
+      msgWrapper.innerHTML = `
+        <div class="bg-slate-900/80 border border-slate-800 text-slate-400 text-xs px-3 py-1 rounded-full font-medium shadow-sm">
+          ${escapeHTML(text)}
+        </div>
+      `;
+      chatBox.appendChild(msgWrapper);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      
+      const icon = type === 'error' ? 'fa-circle-exclamation text-rose-400' : 'fa-circle-check text-emerald-400';
+      const border = type === 'error' ? 'border-rose-500/30' : 'border-emerald-500/30';
+
+      toast.className = `glass-panel border ${border} text-slate-200 text-xs px-4 py-3 rounded-xl shadow-xl flex items-center gap-2.5 toast-anim pointer-events-auto`;
+      toast.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${escapeHTML(message)}</span>`;
+
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    function escapeHTML(str) {
+      return str.replace(/[&<>'"]/g, 
+        tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+      );
     }
   </script>
 </body>
-  </html>
-  
+</html>
