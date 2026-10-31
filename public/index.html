@@ -2,40 +2,52 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Swypyy Messenger</title>
   <script src="/socket.io/socket.io.js"></script>
   <style>
     :root {
       --bg-color: #090712;
-      --card-bg: rgba(22, 17, 38, 0.7);
+      --card-bg: rgba(22, 17, 38, 0.9);
       --border-color: rgba(139, 92, 246, 0.2);
       --purple-primary: #7c3aed;
       --purple-hover: #6d28d9;
       --text-main: #f3f4f6;
       --text-muted: #9ca3af;
+      --danger-color: #ef4444;
     }
 
-    body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
       background-color: var(--bg-color);
       color: var(--text-main);
       margin: 0;
       padding: 0;
+      width: 100%;
+      height: 100%;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      overflow: hidden;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* SETUP SCREEN (CENTERED CARD) */
+    #setup-container {
       display: flex;
       justify-content: center;
       align-items: center;
       min-height: 100vh;
-    }
-
-    .container {
-      width: 100%;
-      max-width: 480px;
       padding: 20px;
-      box-sizing: border-box;
     }
 
     .card {
+      width: 100%;
+      max-width: 420px;
       background: var(--card-bg);
       backdrop-filter: blur(12px);
       border: 1px solid var(--border-color);
@@ -64,10 +76,6 @@
       margin: 0;
     }
 
-    .hidden {
-      display: none !important;
-    }
-
     .input-group {
       margin-bottom: 16px;
     }
@@ -90,7 +98,6 @@
       border-radius: 12px;
       color: #fff;
       font-size: 1rem;
-      box-sizing: border-box;
       outline: none;
       transition: border-color 0.2s;
     }
@@ -118,10 +125,6 @@
       transform: scale(0.98);
     }
 
-    button:hover {
-      opacity: 0.9;
-    }
-
     .divider {
       display: flex;
       align-items: center;
@@ -140,40 +143,99 @@
     .divider::before { margin-right: 10px; }
     .divider::after { margin-left: 10px; }
 
-    /* Chat Room Styles */
+
+    /* FULL SCREEN CHAT INTERFACE */
+    #chat-screen {
+      display: flex;
+      flex-direction: column;
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
+      background: #090712;
+    }
+
     .chat-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 15px;
-      padding-bottom: 12px;
+      padding: 14px 20px;
+      background: rgba(22, 17, 38, 0.95);
       border-bottom: 1px solid var(--border-color);
+      backdrop-filter: blur(10px);
+      z-index: 10;
     }
 
-    .room-badge {
-      background: rgba(139, 92, 246, 0.15);
-      color: #c084fc;
-      padding: 4px 10px;
-      border-radius: 20px;
-      font-size: 0.75rem;
-      font-weight: 600;
-    }
-
-    #chat-box {
-      height: 50vh;
-      overflow-y: auto;
-      padding: 10px;
-      margin-bottom: 15px;
+    .room-title-area {
       display: flex;
-      flex-direction: column;
+      align-items: center;
       gap: 8px;
     }
 
+    .share-btn {
+      background: rgba(139, 92, 246, 0.15);
+      color: #c084fc;
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      border-radius: 8px;
+      padding: 4px 8px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin: 0;
+      width: auto;
+      box-shadow: none;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .room-badge {
+      background: rgba(139, 92, 246, 0.2);
+      color: #c084fc;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .exit-btn {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--danger-color);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin: 0;
+      box-shadow: none;
+      width: auto;
+    }
+
+    .exit-btn:hover {
+      background: rgba(239, 68, 68, 0.25);
+    }
+
+    #chat-box {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: #090712;
+    }
+
     .msg {
-      max-width: 80%;
+      max-width: 75%;
       padding: 10px 14px;
-      border-radius: 14px;
-      font-size: 0.9rem;
+      border-radius: 16px;
+      font-size: 0.95rem;
       word-break: break-word;
       line-height: 1.4;
     }
@@ -183,16 +245,17 @@
       background: rgba(255, 255, 255, 0.05);
       color: var(--text-muted);
       font-size: 0.75rem;
-      border-radius: 8px;
+      border-radius: 20px;
+      padding: 6px 14px;
       text-align: center;
-      max-width: 100%;
-      width: 100%;
+      margin: 8px 0;
     }
 
     .msg.incoming {
       align-self: flex-start;
       background: rgba(255, 255, 255, 0.08);
       border-bottom-left-radius: 4px;
+      color: #fff;
     }
 
     .msg.outgoing {
@@ -203,7 +266,7 @@
     }
 
     .msg-sender {
-      font-size: 0.7rem;
+      font-size: 0.72rem;
       font-weight: 600;
       color: #c084fc;
       margin-bottom: 3px;
@@ -211,75 +274,86 @@
 
     .chat-input-area {
       display: flex;
-      gap: 8px;
+      gap: 10px;
+      padding: 12px 16px;
+      background: rgba(22, 17, 38, 0.95);
+      border-top: 1px solid var(--border-color);
+      align-items: center;
     }
 
     .chat-input-area input {
+      flex: 1;
       margin: 0;
+      border-radius: 24px;
+      padding: 12px 18px;
     }
 
     .chat-input-area button {
       width: auto;
       margin: 0;
-      padding: 0 20px;
+      padding: 12px 22px;
+      border-radius: 24px;
     }
   </style>
 </head>
 <body>
 
-  <div class="container">
+  <!-- SETUP SCREEN -->
+  <div id="setup-container">
     <div class="card">
-      
-      <!-- SETUP SCREEN -->
-      <div id="setup-screen">
-        <div class="brand">
-          <h1>Swypyy Messenger</h1>
-          <p>Secure, ephemeral rooms that vanish when closed</p>
-        </div>
-
-        <!-- CREATE SECTION -->
-        <div class="input-group">
-          <label>Your Name (Host)</label>
-          <input id="host-username" placeholder="Enter your display name" />
-        </div>
-        <button onclick="createRoom()">Create Room</button>
-
-        <div class="divider">OR JOIN</div>
-
-        <!-- JOIN SECTION -->
-        <div class="input-group">
-          <label>Your Name (Guest)</label>
-          <input id="guest-username" placeholder="Enter your display name" style="margin-bottom: 10px;" />
-          <label>Room Code</label>
-          <input id="room-code-input" placeholder="e.g. X7K2P9" />
-        </div>
-        <button onclick="joinRoom()" style="background: rgba(255,255,255,0.08); border: 1px solid var(--border-color); box-shadow: none;">Join Room</button>
+      <div class="brand">
+        <h1>Swypyy Messenger</h1>
+        <p>Secure, ephemeral rooms that vanish when closed</p>
       </div>
 
-      <!-- CHAT ROOM SCREEN -->
-      <div id="chat-screen" class="hidden">
-        <div class="chat-header">
-          <div>
-            <div style="font-size: 0.8rem; color: var(--text-muted);">Active Session</div>
-            <div id="room-header" style="font-weight: 600; font-size: 0.95rem;"></div>
-          </div>
-          <div class="room-badge" id="role-badge">Member</div>
-        </div>
+      <!-- CREATE SECTION -->
+      <div class="input-group">
+        <label>Your Name (Host)</label>
+        <input id="host-username" placeholder="Enter your display name" />
+      </div>
+      <button onclick="createRoom()">Create Room</button>
 
-        <div id="chat-box"></div>
+      <div class="divider">OR JOIN</div>
 
-        <div class="chat-input-area">
-          <input id="message-input" placeholder="Type a message..." onkeydown="if(event.key==='Enter') sendMessage()" />
-          <button onclick="sendMessage()">Send</button>
+      <!-- JOIN SECTION -->
+      <div class="input-group">
+        <label>Your Name (Guest)</label>
+        <input id="guest-username" placeholder="Enter your display name" style="margin-bottom: 10px;" />
+        <label>Room Code</label>
+        <input id="room-code-input" placeholder="e.g. X7K2P9" />
+      </div>
+      <button onclick="joinRoom()" style="background: rgba(255,255,255,0.08); border: 1px solid var(--border-color); box-shadow: none;">Join Room</button>
+    </div>
+  </div>
+
+  <!-- FULL SCREEN CHAT ROOM -->
+  <div id="chat-screen" class="hidden">
+    <div class="chat-header">
+      <div>
+        <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Active Session</div>
+        <div class="room-title-area">
+          <div id="room-header" style="font-weight: 700; font-size: 1.1rem; color: #fff;"></div>
+          <button class="share-btn" onclick="shareRoomCode()">🔗 Share</button>
         </div>
       </div>
+      <div class="header-actions">
+        <div class="room-badge" id="role-badge">Member</div>
+        <button class="exit-btn" onclick="exitRoom()">Exit</button>
+      </div>
+    </div>
 
+    <div id="chat-box"></div>
+
+    <div class="chat-input-area">
+      <input id="message-input" placeholder="Type a message..." onkeydown="if(event.key==='Enter') sendMessage()" />
+      <button onclick="sendMessage()">Send</button>
     </div>
   </div>
 
   <script>
     const socket = io();
     let currentUser = '';
+    let currentRoomCode = '';
 
     function createRoom() {
       currentUser = document.getElementById('host-username').value.trim() || 'Host';
@@ -296,6 +370,7 @@
       }
 
       currentUser = guestNameInput || 'Guest';
+      currentRoomCode = codeInput;
       
       showChat(`Code: ${codeInput}`, currentUser);
       socket.emit('join-room', { code: codeInput, username: currentUser });
@@ -312,8 +387,33 @@
       input.value = '';
     }
 
+    function shareRoomCode() {
+      if (!currentRoomCode) return;
+      
+      const shareData = {
+        title: 'Swypyy Messenger Invite',
+        text: `Join my private ephemeral chat session on Swypyy Messenger!\nRoom Code: ${currentRoomCode}\nWebsite: ${window.location.href}`,
+        url: window.location.href
+      };
+
+      if (navigator.share) {
+        navigator.share(shareData).catch(() => {});
+      } else {
+        // Fallback: Copy to clipboard
+        navigator.clipboard.writeText(`Room Code: ${currentRoomCode}\nJoin here: ${window.location.href}`);
+        alert(`Room Code copied: ${currentRoomCode}`);
+      }
+    }
+
+    function exitRoom() {
+      if (confirm('Are you sure you want to leave the room?')) {
+        location.reload();
+      }
+    }
+
     // Server Listeners
     socket.on('room-created', ({ code }) => {
+      currentRoomCode = code;
       showChat(`Code: ${code}`, currentUser);
     });
 
@@ -335,7 +435,7 @@
     socket.on('error-msg', (msg) => alert(msg));
 
     function showChat(headerText, nameTag) {
-      document.getElementById('setup-screen').classList.add('hidden');
+      document.getElementById('setup-container').classList.add('hidden');
       document.getElementById('chat-screen').classList.remove('hidden');
       document.getElementById('room-header').innerText = headerText;
       document.getElementById('role-badge').innerText = nameTag;
