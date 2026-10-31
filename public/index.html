@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ephemeral Chat</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 15px; margin: 0; background: #121212; color: #fff; }
+    .hidden { display: none; }
+    input, button { padding: 10px; margin: 5px 0; width: 100%; box-sizing: border-box; }
+    #chat-box { height: 60vh; overflow-y: auto; border: 1px solid #333; padding: 10px; margin-bottom: 10px; }
+    .msg { margin-bottom: 8px; }
+  </style>
+</head>
+<body>
+
+  <!-- JOIN / CREATE SCREEN -->
+  <div id="setup-screen">
+    <h2>Disappearing Rooms</h2>
+    <input id="username" placeholder="Your Nickname" />
+    <button onclick="createRoom()">Create New Room</button>
+    <hr />
+    <input id="room-code-input" placeholder="Enter 6-digit Code" />
+    <button onclick="joinRoom()">Join Room</button>
+  </div>
+
+  <!-- CHAT ROOM SCREEN -->
+  <div id="chat-screen" class="hidden">
+    <h3 id="room-header"></h3>
+    <div id="chat-box"></div>
+    <input id="message-input" placeholder="Type a message..." />
+    <button onclick="sendMessage()">Send</button>
+  </div>
+
+  <script>
+    const socket = io();
+    let currentUser = '';
+
+    function createRoom() {
+      currentUser = document.getElementById('username').value || 'Host';
+      socket.emit('create-room', { username: currentUser });
+    }
+
+    function joinRoom() {
+      currentUser = document.getElementById('username').value || 'Guest';
+      const code = document.getElementById('room-code-input').value.toUpperCase();
+      socket.emit('join-room', { code, username: currentUser });
+    }
+
+    function sendMessage() {
+      const input = document.getElementById('message-input');
+      if (!input.value) return;
+      socket.emit('send-message', { text: input.value, sender: currentUser });
+      input.value = '';
+    }
+
+    // Server Listeners
+    socket.on('room-created', ({ code }) => {
+      showChat(`Room Code: ${code} (Share this)`);
+    });
+
+    socket.on('user-joined', ({ username }) => {
+      appendMsg('System', `${username} entered the room.`);
+    });
+
+    socket.on('new-message', ({ text, sender }) => {
+      appendMsg(sender, text);
+    });
+
+    socket.on('room-destroyed', (reason) => {
+      alert(reason);
+      location.reload();
+    });
+
+    socket.on('error-msg', (msg) => alert(msg));
+
+    function showChat(headerText) {
+      document.getElementById('setup-screen').classList.add('hidden');
+      document.getElementById('chat-screen').classList.remove('hidden');
+      document.getElementById('room-header').innerText = headerText;
+    }
+
+    function appendMsg(sender, text) {
+      const box = document.getElementById('chat-box');
+      box.innerHTML += `<div class="msg"><strong>${sender}:</strong> ${text}</div>`;
+      box.scrollTop = box.scrollHeight;
+    }
+  </script>
+</body>
+      </html>
+    
