@@ -2,7 +2,7 @@
 
 A modern, high-end, web-based anonymous ephemeral messaging app built with a sleek dark-violet aesthetic. Designed for secure, temporary chat rooms that completely vanish when closed.
 
-🔗 **Live App:** [View Live App](https://sanjay-messenger.onrender.com)
+🔗 **Live App:** [View Live App](https://swypyy-messenger.onrender.com)
 
 ---
 
