@@ -1,48 +1,38 @@
-# ⚡ Swypyy Messenger
+# Ephemeral Chat
 
-A modern, high-end, web-based anonymous ephemeral messaging app built with a sleek dark-violet aesthetic. Designed for secure, temporary chat rooms that completely vanish when closed.
+A small real-time chat-room project where people can join a room and chat using display names.
 
-🔗 **Live App:** [View Live App](https://swypyy-messenger.onrender.com)
+🔗 **Live app:** [swypyy-messenger.onrender.com](https://swypyy-messenger.onrender.com)
 
----
+## Features
 
-## ✨ Features
-* **Zero Trace / Ephemeral:** No permanent databases, user accounts, or chat logs. Once the host leaves or closes the room, the session data is completely destroyed from memory.
-* **Custom Display Names:** Both hosts and guests can choose their own custom nicknames before entering a room.
-* **Instant Share System:** Includes a 1-tap native mobile Web Share API button to instantly invite friends via WhatsApp, Instagram, Discord, or SMS.
-* **WhatsApp-Style UI:** Clean, full-screen mobile-first interface featuring dark glassmorphism (`#090712`), gradient accents, and responsive layout scaling.
-* **Exit Functionality:** Clean leave-room handling with real-time socket updates.
+- Temporary chat rooms
+- Custom display names
+- Shareable room links
+- Responsive chat interface
 
----
+## Built with
 
-## 🛠️ Tech Stack
-* **Frontend:** HTML5, CSS3, JavaScript (Vanilla), Socket.IO Client
-* **Backend:** Node.js, Express, Socket.IO Server
-* **Hosting:** Render.com (Web Service)
+- HTML, CSS, and JavaScript
+- Node.js and Express
+- Socket.IO
 
----
+## Run locally
 
-## 🚀 Running Locally
+1. Install [Node.js](https://nodejs.org/).
+2. Clone this repository and open its folder:
 
-1. **Clone the repository:**
    ```bash
-   git clone https://github.com/anazyy/ephemeral-chat.git
+   git clone https://github.com/swypyy/ephemeral-chat.git
    cd ephemeral-chat
    ```
 
-2. **Install dependencies:**
+3. Install dependencies and start the server:
+
    ```bash
    npm install
+   npm start
    ```
 
-3. **Start the server:**
-   ```bash
-   node server.js
-   ```
+4. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-4. Open your browser and navigate to `http://localhost:3000`.
-
----
-
-## 📄 License
-This project is open source and available under the MIT License.
