@@ -1,8 +1,8 @@
-# Ephemeral Chat
+# Anonymous Chat | Swypyy
 
 A small real-time chat-room project where people can join a room and chat using display names.
 
-🔗 **Live app:** [swypyy-messenger.onrender.com](https://swypyy-messenger.onrender.com)
+🔗 **Live app:** [Visit](https://swypyy.github.io/anonymous-chat.html)
 
 ## Features
 
@@ -23,7 +23,7 @@ A small real-time chat-room project where people can join a room and chat using 
 2. Clone this repository and open its folder:
 
    ```bash
-   git clone https://github.com/swypyy/ephemeral-chat.git
+   git clone https://github.com/swypyy/Anonymous-Chat-repo.git
    cd ephemeral-chat
    ```
 
