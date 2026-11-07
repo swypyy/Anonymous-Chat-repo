@@ -1,4 +1,3 @@
-
 const express = require('express');
 const http = require('http');
 const path = require('path');
@@ -9,6 +8,10 @@ const app = express();
 const server = http.createServer(app);
 
 const io = new Server(server, {
+    cors: {
+        origin: 'https://swypyy.github.io',
+        methods: ['GET', 'POST']
+    },
     maxHttpBufferSize: 1e6,
     pingTimeout: 20000,
     pingInterval: 25000
@@ -21,12 +24,11 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.get('/health', (req, res) => {
     res.json({
         status: 'online',
-        service: 'Swypyy Messenger'
+        service: 'Anonymous Chat'
     });
 });
 
-// Active rooms are stored in memory.
-// They disappear when the room closes or the server restarts.
+// Temporary rooms stored in memory.
 const rooms = new Map();
 
 const MAX_USERNAME_LENGTH = 24;
@@ -96,7 +98,6 @@ async function destroyRoom(code, reason) {
 
     io.to(code).emit('room-destroyed', reason);
 
-    // Clear room information from connected members.
     const clients = await io.in(code).fetchSockets();
 
     for (const client of clients) {
@@ -121,7 +122,6 @@ async function leaveRoom(socket) {
 
     if (!room) return;
 
-    // The host leaving ends the entire temporary room.
     if (room.hostId === socket.id) {
         await destroyRoom(
             code,
@@ -192,9 +192,7 @@ io.on('connection', (socket) => {
             createdAt: Date.now()
         };
 
-        room.users.set(socket.id, {
-            name
-        });
+        room.users.set(socket.id, { name });
 
         rooms.set(code, room);
 
@@ -256,15 +254,12 @@ io.on('connection', (socket) => {
             );
         }
 
-        room.users.set(socket.id, {
-            name
-        });
+        room.users.set(socket.id, { name });
 
         socket.join(roomCode);
         socket.data.roomCode = roomCode;
         socket.data.isHost = false;
 
-        // Confirm the join before the client opens the chat.
         socket.emit('room-joined', {
             code: roomCode,
             users: getRoomUsers(room),
@@ -302,7 +297,6 @@ io.on('connection', (socket) => {
             );
         }
 
-        // Basic per-socket rate limit.
         const now = Date.now();
 
         socket.data.messageTimes = socket.data.messageTimes
@@ -330,12 +324,10 @@ io.on('connection', (socket) => {
 
         room.messages.push(message);
 
-        // Keep only the latest messages in memory.
         if (room.messages.length > MAX_ROOM_MESSAGES) {
             room.messages.shift();
         }
 
-        // Broadcast to everyone except the sender.
         socket.to(code).emit('new-message', message);
 
         if (typeof callback === 'function') {
@@ -365,18 +357,16 @@ io.on('connection', (socket) => {
     // LEAVE ROOM
     socket.on('leave-room', async () => {
         await leaveRoom(socket);
-
         socket.emit('room-left');
     });
 
     // DISCONNECT
     socket.on('disconnect', async () => {
         await leaveRoom(socket);
-
         console.log('Disconnected:', socket.id);
     });
 });
 
 server.listen(PORT, () => {
-    console.log(`Swypyy Messenger running on port ${PORT}`);
+    console.log(`Anonymous Chat running on port ${PORT}`);
 });
