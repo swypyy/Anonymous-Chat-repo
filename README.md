@@ -24,7 +24,7 @@ A small real-time chat-room project where people can join a room and chat using 
 
    ```bash
    git clone https://github.com/swypyy/Anonymous-Chat-repo.git
-   cd ephemeral-chat
+   cd Anonymous-Chat-repo
    ```
 
 3. Install dependencies and start the server:
