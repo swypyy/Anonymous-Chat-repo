@@ -1,38 +1,57 @@
-# Anonymous Chat | Swypyy
+# Anonymous Chat
 
-A small real-time chat-room project where people can join a room and chat using display names.
+A lightweight real-time anonymous chat app built with Node.js, Express, and Socket.IO.
 
-🔗 **Live app:** [Visit](https://swypyy.github.io/anonymous-chat.html)
+🔗 Live app: [Open the chat](https://swypyy.github.io/anonymous-chat.html)
 
-## Features
+## Overview
 
+This project lets users join temporary chat rooms, choose a display name, and send messages without creating an account. It is designed as a simple and private communication experience for quick conversations.
+
+## Key features
+
+- Anonymous room-based chat
 - Temporary chat rooms
 - Custom display names
 - Shareable room links
-- Responsive chat interface
+- Live messaging with Socket.IO
+- Responsive front-end interface
 
-## Built with
+## Tech stack
 
-- HTML, CSS, and JavaScript
-- Node.js and Express
+- HTML
+- CSS
+- JavaScript
+- Node.js
+- Express
 - Socket.IO
 
 ## Run locally
 
-1. Install [Node.js](https://nodejs.org/).
-2. Clone this repository and open its folder:
+```bash
+git clone https://github.com/swypyy/Anonymous-Chat-repo.git
+cd Anonymous-Chat-repo
+npm install
+npm start
+```
 
-   ```bash
-   git clone https://github.com/swypyy/Anonymous-Chat-repo.git
-   cd Anonymous-Chat-repo
-   ```
+Then open:
 
-3. Install dependencies and start the server:
+```text
+http://localhost:3000
+```
 
-   ```bash
-   npm install
-   npm start
-   ```
+## How it works
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser.
+1. A user visits the app and enters a display name.
+2. The app creates or joins a chat room.
+3. Messages are sent in real time to all users in the same room.
+4. The room remains temporary and lightweight for simple anonymous communication.
 
+## Project purpose
+
+This project is a practical exercise in building real-time web apps, learning Socket.IO, and experimenting with client/server communication over WebSockets.
+
+## License
+
+This project is available for learning and personal use.
